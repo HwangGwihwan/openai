@@ -5,4 +5,18 @@
 		INSERT INTO chat_history(user_id, user_chat, ai_chat)
 		VALUES (#{userId}, #{userChat}, #{aiChat})
 	</insert>
+	
+	<select id="selectChatAll" parameterType="String"
+			resultType="com.example.springai.dto.ChatHistoryDto">
+		SELECT user_id AS userId, user_chat AS userChat, ai_chat AS aiChat, create_at AS createAt, favorite
+		FROM chat_history
+		WHERE user_id = #{id}
+	</select>
+
+	<update id="updateFavorite" parameterType="map">
+		UPDATE chat_history
+		SET favorite = #{favorite}
+		WHERE no = #{id}
+	</update>
+	
 </mapper>

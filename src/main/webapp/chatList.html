@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>대화목록</title>
+
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+  <!-- DataTables CSS -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+
+  <!-- DataTables JS -->
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      margin: 30px;
+    }
+
+    h3 {
+      margin-bottom: 20px;
+    }
+
+    .user-info {
+      float: right;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+	/* 각 열 너비 조절 */
+	#chat-table th:nth-child(2),
+	#chat-table td:nth-child(2) {
+	  width: 140px; /* 날짜/시간 */
+	}
+
+	#chat-table th:nth-child(3),
+	#chat-table td:nth-child(3) {
+	  width: 100px; /* USER ID */
+	  white-space: nowrap;
+	}
+	
+	#chat-table th:nth-child(4),
+	#chat-table td:nth-child(4) {
+	  width: 150px; /* 유저 질문 */
+	  word-break: break-word;
+	}
+	
+	#chat-table th:nth-child(5),
+	#chat-table td:nth-child(5) {
+	  max-width: 400px; /* AI 응답 */
+	  word-break: break-word;
+	  text-align: left;
+	}
+	
+	#chat-table th:nth-child(6),
+	#chat-table td:nth-child(6) {
+	  width: 100px; /* 즐겨찾기 */
+	  white-space: nowrap;
+	}
+	
+	#chat-table th:nth-child(7),
+	#chat-table td:nth-child(7) {
+	  width: 110px; /* 해시태그 버튼 */
+	  white-space: nowrap;
+	}
+    th, td {
+      padding: 12px 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    thead {
+      background-color: #f8fafc;
+    }
+
+    /* 토글 스위치 스타일 */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      vertical-align: middle;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc;
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    .switch input:checked + .slider {
+      background-color: #4caf50;
+    }
+
+    .switch input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* 하단 컨트롤 박스 스타일 */
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 14px;
+    }
+
+    .controls button {
+      padding: 6px 12px;
+      background-color: #000;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 3px;
+      font-weight: bold;
+    }
+
+    .controls label {
+      cursor: pointer;
+    }
+
+    /* 페이징은 DataTables 기본 스타일 사용 */
+  </style>
+</head>
+<body>
+
+  <h3>대화목록</h3>
+
+  <div class="user-info" id="user-info">사용자: </div>
+
+  <table id="chat-table" class="display">
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="select-all" /></th>
+        <th>날짜/시간</th>
+        <th>USER ID</th>
+        <th>유저 질문</th>
+        <th>AI응답</th>
+        <th>즐겨찾기</th>
+        <th>#</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- AJAX로 채워짐 -->
+    </tbody>
+  </table>
+
+  <!-- 하단 컨트롤 -->
+  <div class="controls">
+    <button id="delete-selected">선택 삭제</button>
+    <label><input type="radio" name="view-filter" value="all" checked> 전체보기</label>
+    <label><input type="radio" name="view-filter" value="favorite"> 즐겨찾기</label>
+  </div>
+
+  <script>
+    let dataTable = null;
+    let allData = [];
+
+    $(function() {
+      // 1. 로그인 유저 정보 가져오기
+      $.ajax({
+        url: "/loginUser",
+        method: "GET",
+        success: function(user) {
+          $("#user-info").text(`사용자: ${user.id}`);
+
+          // 2. 로그인 유저 ID로 채팅 기록 가져오기
+          fetchData(user.id);
+        },
+        error: function() {
+          alert("로그인이 필요합니다.");
+          location.href = "/login.html";
+        }
+      });
+
+      // 데이터 가져와서 테이블 그리기 함수
+      function fetchData(userId) {
+        $.ajax({
+          url: `/chatHistory/${userId}`,
+          method: "GET",
+          success: function(data) {
+            allData = data || [];
+            renderTable(allData);
+          },
+          error: function() {
+            alert("대화 기록을 불러오는 데 실패했습니다.");
+          }
+        });
+      }
+
+      // 테이블 렌더링 함수 (DataTables 재초기화 포함)
+      function renderTable(data) {
+        const tbody = $("#chat-table tbody");
+        tbody.empty();
+
+        if (!data || data.length === 0) {
+          tbody.append("<tr><td colspan='7'>대화 기록이 없습니다.</td></tr>");
+        } else {
+          data.forEach(item => {
+            const favoriteToggle = `
+              <label class="switch">
+                <input type="checkbox" class="toggle-favorite" data-id="${item.no}" ${item.favorite ? "checked" : ""} />
+                <span class="slider"></span>
+              </label>
+            `;
+
+            const row = `
+              <tr>
+                <td><input type="checkbox" class="select-row" data-id="${item.no}"></td>
+                <td>${item.createAt}</td>
+                <td>${item.userId}</td>
+                <td>${item.userChat}</td>
+                <td>${item.aiChat}</td>
+                <td>${favoriteToggle}</td>
+                <td><button class="tag-btn" data-id="${item.no}"># 해시태그 추가</button></td>
+              </tr>
+            `;
+            tbody.append(row);
+          });
+        }
+
+        // DataTables 재초기화
+        if (dataTable) {
+          dataTable.destroy();
+        }
+        dataTable = $('#chat-table').DataTable({
+          paging: true,
+          searching: false,
+          ordering: true,
+          lengthChange: false,
+          pageLength: 3,
+          language: {
+            url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/ko.json"
+          }
+        });
+      }
+
+      // 전체 선택 체크박스 기능 (이벤트 위임)
+      $(document).on("change", "#select-all", function() {
+        $(".select-row").prop("checked", this.checked);
+      });
+
+      // 즐겨찾기 토글 변경 이벤트 예시 (서버에 변경 사항 전송 가능)
+      $(document).on("change", ".toggle-favorite", function() {
+		  const chatId = $(this).data("id");
+		  const isFavorite = $(this).is(":checked");
+		  const favoriteValue = isFavorite ? 1 : 0;  // true -> 1, false -> 0
+		
+		  $.ajax({
+		    url: `/chatHistory/favorite/${chatId}`,
+		    method: "POST",  // 또는 PUT/PATCH (서버 API에 맞게)
+		    contentType: "application/json",
+		    data: JSON.stringify({ favorite: favoriteValue }),
+		    success: function(response) {
+		      console.log(`Chat ID ${chatId} favorite 업데이트 성공`);
+		      // 필요하면 서버에서 최신 데이터 받아 테이블 다시 그리기 등 처리
+		    },
+		    error: function(xhr, status, error) {
+		      alert("즐겨찾기 업데이트에 실패했습니다.");
+		      $(this).prop("checked", !isFavorite);
+		      console.error(error);
+		    }.bind(this)
+		  });
+		});
+
+      // 선택 삭제 버튼 클릭
+      $("#delete-selected").click(function() {
+        const selectedIds = $(".select-row:checked").map(function() {
+          return $(this).data("id");
+        }).get();
+
+        if(selectedIds.length === 0) {
+          alert("삭제할 항목을 선택해주세요.");
+          return;
+        }
+
+        if(!confirm(`선택한 ${selectedIds.length}개 항목을 삭제하시겠습니까?`)) {
+          return;
+        }
+
+        // 서버에 삭제 요청 보내기 (예시)
+        /*
+        $.ajax({
+          url: "/chatHistory/delete",
+          method: "POST",
+          contentType: "application/json",
+          data: JSON.stringify(selectedIds),
+          success: function() {
+            alert("삭제 완료");
+            // 삭제 후 다시 데이터 가져오기
+            fetchData($("#user-info").text().split(": ")[1]);
+          },
+          error: function() {
+            alert("삭제 실패");
+          }
+        });
+        */
+
+        // 임시로 로컬 데이터에서 삭제 처리 및 테이블 갱신
+        allData = allData.filter(item => !selectedIds.includes(item.no));
+        renderTable(allData);
+      });
+
+      // 전체보기 / 즐겨찾기 필터 변경
+      $("input[name='view-filter']").change(function() {
+        const filter = $(this).val();
+
+        if(filter === "favorite") {
+          const filtered = allData.filter(item => item.favorite);
+          renderTable(filtered);
+        } else {
+          renderTable(allData);
+        }
+      });
+
+    });
+  </script>
+
+</body>
+</html>

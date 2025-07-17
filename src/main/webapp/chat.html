@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>챗봇</title>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <style>
@@ -25,12 +25,54 @@
     }
 
     .chat-header {
-      background-color: #556ee6;
+      background-color: #1e293b;
       color: #fff;
-      padding: 18px;
-      text-align: center;
-      font-size: 20px;
+      padding: 14px 18px;
+      font-size: 18px;
       font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chat-header .title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 18px;
+    }
+    .chat-header .title::before {
+      content: "🧠";
+      font-size: 20px;
+    }
+
+    .chat-header button {
+      background-color: #334155;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.2s ease-in-out;
+      user-select: none;
+    }
+    .chat-header button:hover {
+      background-color: #475569;
+    }
+    .chat-header button:active {
+      background-color: #1e293b;
+    }
+
+    .chat-header button svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      flex-shrink: 0;
     }
 
     .chat-messages {
@@ -113,67 +155,137 @@
     #send-btn:hover {
       background-color: #4455cc;
     }
+
+    .clear-btn-wrapper {
+      padding: 12px 0;
+      background: #fff;
+      border-top: 1px solid #ccc;
+      display: flex;
+      justify-content: center; /* 중앙 정렬 */
+    }
+
+    #clear-btn {
+      background-color: #ef4444;
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out;
+      user-select: none;
+    }
+    #clear-btn:hover {
+      background-color: #dc2626;
+    }
+    #clear-btn:active {
+      background-color: #b91c1c;
+    }
   </style>
 </head>
 <body>
   <div class="chat-container">
-    <div class="chat-header">챗봇</div>
+    <div class="chat-header">
+      <div class="title">챗봇</div>
+      <button id="save-btn" title="대화내용 저장">
+        💾 대화내용 저장
+      </button>
+    </div>
     <div class="chat-messages" id="chat-messages"></div>
+
     <form class="chat-input" id="chat-form">
       <input type="text" id="user-input" placeholder="메시지를 입력하세요..." autocomplete="off" />
       <button type="submit" id="send-btn">전송</button>
     </form>
+
+    <div class="clear-btn-wrapper">
+      <button id="clear-btn" title="대화내용 클리어">대화내용 클리어</button>
+    </div>
   </div>
 
-  <script>
-    $(function () {
-      $("#chat-form").submit(function (e) {
-        e.preventDefault();
-        const message = $("#user-input").val().trim();
-        if (!message) return;
+	<script>
+	  $(function () {
+	    // ✅ 저장 버튼 클릭 이벤트 추가
+	    $("#save-btn").click(function () {
+	      $.ajax({
+	        url: "/chat/save",
+	        method: "POST",
+	        success: function () {
+	          alert("✅ 대화내용이 저장되었습니다.");
+	          $("#chat-messages").empty();
+	        },
+	        error: function () {
+	          alert("⚠️ 저장에 실패했습니다.");
+	        }
+	      });
+	    });
+	    
+	    $("#clear-btn").click(function () {
+    	  $.ajax({
+    	    url: "/chat/clear",
+    	    method: "POST",
+    	    success: function () {
+    	      $("#chat-messages").empty();
+    	      alert("✅ 대화내용이 클리어되었습니다.");
+    	    },
+    	    error: function () {
+    	      alert("⚠️ 클리어 요청에 실패했습니다.");
+    	    }
+    	  });
+    	});
+	
+	    // ✅ 채팅 전송 처리
+	    $("#chat-form").submit(function (e) {
+	      e.preventDefault();
+	      const message = $("#user-input").val().trim();
+	      if (!message) return;
+	
+	      appendMessage('user', message);
+	      $("#user-input").val("");
+	      scrollToBottom();
+	
+	      $.ajax({
+	        url: "/chat",
+	        method: "POST",
+	        contentType: "application/json",
+	        data: JSON.stringify({ "userMsg": message }),
+	        success: function (res) {
+	          appendMessage('bot', res || "응답이 없습니다.");
+	          scrollToBottom();
+	        },
+	        error: function () {
+	          appendMessage('bot', "⚠️ 서버 오류 발생");
+	          scrollToBottom();
+	        }
+	      });
+	    });
+	
+	    // ✅ 채팅 메시지 화면에 추가
+	    function appendMessage(type, text) {
+	      const bubble = `
+	        <div class="message ${type}">
+	          ${type === 'bot' ? '<div class="profile-icon"></div>' : ''}
+	          <div class="bubble">${escapeHtml(text)}</div>
+	        </div>`;
+	      $("#chat-messages").append(bubble);
+	    }
+	
+	    // ✅ 스크롤 아래로 이동
+	    function scrollToBottom() {
+	      const chatBox = $("#chat-messages");
+	      chatBox.scrollTop(chatBox[0].scrollHeight);
+	    }
+	
+	    // ✅ HTML 이스케이프 처리
+	    function escapeHtml(text) {
+	      return text.replace(/[&<>"']/g, function (m) {
+	        return ({
+	          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+	        })[m];
+	      });
+	    }
+	  });
+	</script>
 
-        appendMessage('user', message);
-        $("#user-input").val("");
-        scrollToBottom();
-
-        $.ajax({
-          url: "/chat",
-          method: "POST",
-          contentType: "application/json",
-          data: JSON.stringify({ "userMsg": message }),
-          success: function (res) {
-            appendMessage('bot', res || "응답이 없습니다.");
-            scrollToBottom();
-          },
-          error: function () {
-            appendMessage('bot', "⚠️ 서버 오류 발생");
-            scrollToBottom();
-          }
-        });
-      });
-
-      function appendMessage(type, text) {
-        const bubble = `
-          <div class="message ${type}">
-            ${type === 'bot' ? '<div class="profile-icon"></div>' : ''}
-            <div class="bubble">${escapeHtml(text)}</div>
-          </div>`;
-        $("#chat-messages").append(bubble);
-      }
-
-      function scrollToBottom() {
-        const chatBox = $("#chat-messages");
-        chatBox.scrollTop(chatBox[0].scrollHeight);
-      }
-
-      function escapeHtml(text) {
-        return text.replace(/[&<>"']/g, function (m) {
-          return ({
-            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
-          })[m];
-        });
-      }
-    });
-  </script>
 </body>
 </html>

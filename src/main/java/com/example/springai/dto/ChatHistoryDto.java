@@ -8,4 +8,6 @@ public class ChatHistoryDto {
 	private String userId;
 	private String userChat;
 	private String aiChat;
+	private int favorite;
+	private String createAt;
 }

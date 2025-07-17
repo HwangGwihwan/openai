@@ -1,5 +1,7 @@
 package com.example.springai.mapper;
 
+import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 
 import com.example.springai.dto.ChatHistoryDto;
@@ -8,4 +10,10 @@ import com.example.springai.dto.ChatHistoryDto;
 public interface ChatHistoryMapper {
 	// 대화 내용 저장
 	int save(ChatHistoryDto chatHistoryDto);
+	
+	// 대화 내용 전체
+	List<ChatHistoryDto> selectChatAll(String id);
+	
+	// 즐겨찾기 추가/해제
+	int updateFavorite(String id, int favorite);
 }

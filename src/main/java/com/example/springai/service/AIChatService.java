@@ -12,8 +12,10 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PostMapping;
 
 import com.example.springai.dto.ChatHistoryDto;
+import com.example.springai.dto.UserDto;
 import com.example.springai.mapper.ChatHistoryMapper;
 
 import jakarta.servlet.http.HttpSession;
@@ -71,14 +73,59 @@ public class AIChatService {
 		
 		// messageList 변경된 내용 session의 messageList속성에도 반영
 		session.setAttribute("chatHistory", messageList); // 이전 session chatHistory 속성값을 덮어쓰기
-
+		
+		/*
 		ChatHistoryDto chatHistoryDto = new ChatHistoryDto();
 		chatHistoryDto.setUserId(session.getId());
 		chatHistoryDto.setUserChat(userMsg);
 		chatHistoryDto.setAiChat(aiReply);
 		
 		chatHistoryMapper.save(chatHistoryDto);
+		*/
 		
 		return aiReply;
 	}
+	
+	public void saveChatHistory(HttpSession session) {
+	    List<Message> messageList = (List<Message>) session.getAttribute("chatHistory");
+	    
+	    UserDto loginUser = (UserDto) session.getAttribute("loginUser");
+	    if (loginUser == null) {
+	        // 로그인 안 된 상태거나 세션에 데이터 없음
+	        return;
+	    }
+	    String userId = loginUser.getId();  // getId()는 UserDto의 아이디를 반환하는 메서드
+	    
+	    if (userId == null || messageList == null || messageList.isEmpty()) return;
+
+	    // user 메시지와 assistant 메시지를 짝으로 저장
+	    for (int i = 0; i < messageList.size() - 1; i++) {
+	        if (messageList.get(i) instanceof UserMessage && messageList.get(i + 1) instanceof AssistantMessage) {
+	            String userMsg = ((UserMessage) messageList.get(i)).getText();
+	            String aiMsg = ((AssistantMessage) messageList.get(i + 1)).getText();
+
+	            ChatHistoryDto dto = new ChatHistoryDto();
+	            dto.setUserId(userId);
+	            dto.setUserChat(userMsg);
+	            dto.setAiChat(aiMsg);
+
+	            chatHistoryMapper.save(dto);
+	        }
+	    }
+	    
+	    // 저장 완료 후 세션 초기화
+	    session.setAttribute("chatHistory", new ArrayList<Message>());
+	}
+	
+	// 대화 내용 전체
+	public List<ChatHistoryDto> selectChatAll(String id) {
+		return chatHistoryMapper.selectChatAll(id);
+	}
+
+	// 즐겨찾기 추가/해제
+	public int updateFavorite(String id, int favorite) {
+		return chatHistoryMapper.updateFavorite(id, favorite);
+	}
+
+	
 }

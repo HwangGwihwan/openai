@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.springai.mapper.LoginHistoryMapper">
+	<insert id="recordLoginTime" parameterType="String">
+		INSERT INTO login_history(user_id, login_time)
+		VALUES (#{id}, NOW());
+	</insert>
+	
+	<update id="updateLogoutTime" parameterType="String">
+		UPDATE login_history
+        SET logout_time = NOW()
+        WHERE user_id = #{id} AND logout_time IS NULL
+        ORDER BY login_time DESC
+        LIMIT 1
+	</update>
+	
+	<select id="getLoginHistoryById" parameterType="String"
+			resultType="com.example.springai.dto.LoginHistoryDto">
+			SELECT 
+				login_time AS loginTime,
+				logout_time AS logoutTime,
+				CASE
+					WHEN TIMESTAMPDIFF(SECOND, login_time, logout_time) >= 3600 THEN
+						CONCAT(
+							FLOOR(TIMESTAMPDIFF(SECOND, login_time, logout_time) / 3600), '시간 ',
+							FLOOR((TIMESTAMPDIFF(SECOND, login_time, logout_time) % 3600) / 60), '분'
+						)
+					ELSE
+						CONCAT(
+							FLOOR(TIMESTAMPDIFF(SECOND, login_time, logout_time) / 60), '분'
+						)
+					END AS duration
+			FROM login_history
+			WHERE user_id = #{id}
+			AND logout_time IS NOT NULL
+	</select>
+</mapper>

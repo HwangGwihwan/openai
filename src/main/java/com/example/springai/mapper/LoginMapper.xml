@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.springai.mapper.LoginMapper">
+	<select id="login" parameterType="String" resultType="com.example.springai.dto.UserDto">
+		SELECT id, email, pw
+		FROM USER
+		WHERE id = #{id} AND pw =#{pw}
+	</select>
+	
+	<select id="checkId" parameterType="String" resultType="Integer">
+		SELECT COUNT(*)
+		FROM USER
+		WHERE id = #{id}
+	</select>
+	
+	<insert id="signUp" parameterType="com.example.springai.dto.UserDto">
+		INSERT INTO USER(id, email, pw)
+		VALUES (#{id}, #{email}, #{pw})
+	</insert>
+</mapper>

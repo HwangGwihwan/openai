@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<script>
+	function logout() {
+	    fetch('/logout', {
+	        method: 'POST',
+	        credentials: 'same-origin'  // 세션 쿠키 전송 위해 필요
+	    })
+	    .then(response => {
+	        if (response.ok) {
+	            alert("성공적으로 로그아웃 되었습니다.");
+	            window.location.href = "login.html";  // 로그아웃 성공하면 login.html로 이동
+	        } else {
+	            return response.json().then(data => {
+	                alert(data.message || "로그아웃 실패");
+	            });
+	        }
+	    })
+	    .catch(error => {
+	        alert("오류가 발생했습니다.");
+	        console.error(error);
+	    });
+	}
+</script>
+</head>
+<body>
+    <a href="loginHistory.html">내 로그인 이력 보기</a>
+    <a href="chat.html">챗봇과 대화</a>
+    <a href="chatList.html">대화 목록</a>
+    <button onclick="logout()">로그아웃</button>
+</body>
+</html>
