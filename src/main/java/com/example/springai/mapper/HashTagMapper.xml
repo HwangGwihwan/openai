@@ -14,4 +14,29 @@
 		FROM hashtag
 		WHERE no = #{no}
 	</select>
+	
+	<select id="getPopularTags" resultType="com.example.springai.dto.HashTagDto">
+		SELECT tag_text as tagText, COUNT(*) AS count
+		FROM hashtag
+		GROUP BY (tag_text)
+		ORDER BY COUNT desc
+		LIMIT 4
+	</select>
+	
+	<select id="findChatsByTag" parameterType="String"
+			resultType="com.example.springai.dto.ChatHistoryDto">
+		SELECT user_id AS userId, user_chat AS userChat,
+				 ai_chat AS aiChat, ch.create_at AS createAt,
+				 GROUP_CONCAT(h.tag_text ORDER BY h.tag_text SEPARATOR ',') AS tags
+		FROM chat_history ch LEFT OUTER JOIN hashtag h
+		ON ch.no = h.no
+		WHERE h.tag_text = #{tag}
+		GROUP BY ch.user_id, ch.user_chat, ch.ai_chat, ch.create_at
+		ORDER BY ch.create_at DESC
+	</select>
+	
+	<select id="getAllTags" resultType="String">
+		SELECT DISTINCT tag_text AS tagText
+		FROM hashtag
+	</select>
 </mapper>

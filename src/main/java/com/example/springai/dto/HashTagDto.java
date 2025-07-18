@@ -7,4 +7,5 @@ public class HashTagDto {
 	private int no;
 	private String tagText;
 	private String createAt;
+	private int count;
 }

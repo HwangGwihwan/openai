@@ -1,35 +1,100 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-<meta charset="UTF-8">
-<title>Insert title here</title>
-<script>
-	function logout() {
-	    fetch('/logout', {
-	        method: 'POST',
-	        credentials: 'same-origin'  // 세션 쿠키 전송 위해 필요
-	    })
-	    .then(response => {
-	        if (response.ok) {
-	            alert("성공적으로 로그아웃 되었습니다.");
-	            window.location.href = "login.html";  // 로그아웃 성공하면 login.html로 이동
-	        } else {
-	            return response.json().then(data => {
-	                alert(data.message || "로그아웃 실패");
-	            });
-	        }
-	    })
-	    .catch(error => {
-	        alert("오류가 발생했습니다.");
-	        console.error(error);
-	    });
-	}
-</script>
+  <meta charset="UTF-8">
+  <title>메인 메뉴</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f8f9fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 50px;
+    }
+
+    h2 {
+      font-size: 28px;
+      margin-bottom: 30px;
+      color: #343a40;
+    }
+
+    h2::before {
+      content: "📋 ";
+    }
+
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .menu a {
+      text-decoration: none;
+      color: #20c997;
+      font-size: 18px;
+      padding: 12px 20px;
+      border: 2px solid #20c997;
+      border-radius: 8px;
+      transition: 0.2s;
+      width: 250px;
+      text-align: center;
+      background-color: white;
+    }
+
+    .menu a:hover {
+      background-color: #20c997;
+      color: white;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #c82333;
+    }
+  </style>
+  <script>
+    function logout() {
+      fetch('/logout', {
+        method: 'POST',
+        credentials: 'same-origin'
+      })
+      .then(response => {
+        if (response.ok) {
+          alert("성공적으로 로그아웃 되었습니다.");
+          window.location.href = "login.html";
+        } else {
+          return response.json().then(data => {
+            alert(data.message || "로그아웃 실패");
+          });
+        }
+      })
+      .catch(error => {
+        alert("오류가 발생했습니다.");
+        console.error(error);
+      });
+    }
+  </script>
 </head>
 <body>
+  <h2>메인 메뉴</h2>
+
+  <div class="menu">
     <a href="loginHistory.html">내 로그인 이력 보기</a>
     <a href="chat.html">챗봇과 대화</a>
     <a href="chatList.html">대화 목록</a>
-    <button onclick="logout()">로그아웃</button>
+    <a href="hashtag.html">해시태그 순위</a>
+  </div>
+
+  <button onclick="logout()">로그아웃</button>
 </body>
 </html>

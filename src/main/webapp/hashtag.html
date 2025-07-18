@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>해시태그 대화 목록</title>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    .hashtag-list {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+
+    .hashtag-btn {
+      padding: 15px 20px;
+      border: none;
+      border-radius: 10px;
+      background-color: #fff;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+      cursor: pointer;
+      font-size: 15px;
+      min-width: 180px;
+      text-align: left;
+      transition: all 0.2s ease;
+    }
+
+    .hashtag-btn span {
+      display: block;
+      font-size: 12px;
+      color: #777;
+      margin-top: 5px;
+    }
+
+    .hashtag-btn:hover {
+      background-color: #f5f5f5;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .hashtag-btn.selected {
+      background-color: #333;
+      color: white;
+    }
+
+    .main-container {
+      display: flex;
+      gap: 30px;
+    }
+
+    .sidebar {
+      width: 200px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* 고정된 #해시태그 텍스트 스타일 */
+    .hashtag-header {
+      font-weight: bold;
+      font-size: 18px;
+      margin-bottom: 8px;
+      user-select: none;
+    }
+
+    .sidebar .tag-item {
+      padding: 10px 15px;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .sidebar .tag-item:hover,
+    .sidebar .tag-item.selected {
+      background-color: #333;
+      color: white;
+    }
+
+    .content {
+      flex: 1;
+    }
+
+    .text-wrap {
+      white-space: normal !important;
+      word-break: break-word;
+    }
+
+    /* 대화 목록 제목 스타일 */
+    .chat-list-header {
+      font-weight: bold;
+      font-size: 20px;
+      margin-bottom: 10px;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🔥 인기 해시태그</h2>
+  <div class="hashtag-list" id="popular-tags">
+    <!-- 인기 해시태그 버튼들 -->
+  </div>
+
+  <div class="main-container">
+    <div class="sidebar">
+      <div class="hashtag-header">#해시태그</div>  <!-- 고정 텍스트 -->
+      <div id="all-tags">
+        <!-- 전체 해시태그 목록 -->
+      </div>
+    </div>
+    <div class="content">
+      <div class="chat-list-header" style="display:none;">💬 대화 목록</div>  <!-- 대화 목록 제목 추가 -->
+      <table id="chat-table" class="display" style="display:none;">
+        <thead>
+          <tr>
+            <th>사용자ID</th>
+            <th>질문</th>
+            <th>응답</th>
+            <th>날짜/시간</th>
+            <th>해시태그</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script>
+    let dataTable = null;
+
+    $(function () {
+      // 인기 해시태그 불러오기
+      $.get("/popular", function (tags) {
+        const container = $("#popular-tags").empty();
+        tags.forEach(tag => {
+          const btn = $(`
+            <button class="hashtag-btn">
+              #${tag.tagText} <span>${tag.count}회 사용</span>
+            </button>
+          `);
+          
+          btn.on("click", function () {
+            $(".tag-item").removeClass("selected"); // 왼쪽 태그 선택 해제
+            $(".hashtag-btn").removeClass("selected");
+            $(this).addClass("selected");
+
+            fetchChatsByTag(tag.tagText); // 인기 태그 클릭 → 대화 목록 표시
+          });
+          
+          container.append(btn);
+        });
+      });
+
+      // 전체 해시태그 목록 불러오기
+      $.get("/tags", function (tags) {
+        const container = $("#all-tags").empty();
+        tags.forEach(tag => {
+          const item = $(`<div class="tag-item" data-tag="${tag}">#${tag}</div>`);
+          item.on("click", function () {
+            $(".tag-item").removeClass("selected");
+            $(".hashtag-btn").removeClass("selected"); // 인기 해시태그 선택 해제
+            $(this).addClass("selected");
+            fetchChatsByTag(tag);
+          });
+          container.append(item);
+        });
+      });
+
+      // 해시태그별 대화 가져오기
+      function fetchChatsByTag(tag) {
+        $.ajax({
+          url: `/chatByTag/${encodeURIComponent(tag)}`,
+          method: "GET",
+          success: function (data) {
+            renderTable(data);
+          },
+          error: function () {
+            alert("대화 기록을 불러오는 데 실패했습니다.");
+          }
+        });
+      }
+
+      // 테이블 초기화 및 데이터 그리기
+      function renderTable(data) {
+        if (!data || data.length === 0) {
+          if (dataTable) {
+            dataTable.clear().draw();
+          }
+          // 대화가 없으면 테이블 숨기기
+          $('.chat-list-header').hide();
+          $('#chat-table').hide();
+          return;
+        }
+
+        // 대화가 있으면 테이블 보이기
+        $('.chat-list-header').show();
+        $('#chat-table').show();
+
+        if (!dataTable) {
+          dataTable = $('#chat-table').DataTable({
+            data: data,
+            paging: true,
+            searching: true,
+            ordering: false,
+            lengthChange: false,
+            pageLength: 5,
+            columns: [
+              { data: 'userId' },
+              { data: 'userChat' },
+              { data: 'aiChat' },
+              { data: 'createAt' },
+              {
+                data: 'tags',
+                render: function (tags) {
+                  return tags ? tags.split(",").map(t => `#${t.trim()}`).join(", ") : "";
+                }
+              }
+            ],
+            columnDefs: [
+              { targets: 1, width: "25%" },
+              { targets: 2, width: "30%", className: "text-wrap" },
+              { targets: 4, width: "20%" }
+            ],
+            language: {
+              url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/ko.json"
+            }
+          });
+        } else {
+          dataTable.clear();
+          dataTable.rows.add(data);
+          dataTable.draw();
+        }
+      }
+
+      // 페이지 로드 시 대화 테이블 숨기기
+      $('#chat-table').hide();
+    });
+  </script>
+</body>
+</html>
