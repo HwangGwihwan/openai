@@ -3,6 +3,7 @@ package com.example.springai.api;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -123,4 +124,25 @@ public class LoginController {
 	    List<LoginHistoryDto> historyList = loginHistoryService.getLoginHistoryById(id);
 	    return ResponseEntity.ok(historyList);
 	}
+	
+	// 회원정보 수정
+	@PostMapping("/updateUser")
+    public ResponseEntity<?> updateUser(@RequestBody UserDto userDto, HttpSession session) {
+        int result = loginService.updateUser(userDto);  // 이메일 업데이트
+        
+        if (result == 0) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("비밀번호가 일치하지 않거나 존재하지 않는 계정입니다.");
+        }
+
+        // 세션에서 로그인 유저 가져오기
+        UserDto loginUser = (UserDto) session.getAttribute("loginUser");
+        if (loginUser != null) {
+            // 수정된 이메일로 세션 정보 갱신
+            loginUser.setEmail(userDto.getEmail());
+            session.setAttribute("loginUser", loginUser);
+        }
+
+        return ResponseEntity.ok().build();
+    }
+	
 }

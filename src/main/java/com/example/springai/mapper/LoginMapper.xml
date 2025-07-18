@@ -17,4 +17,10 @@
 		INSERT INTO USER(id, email, pw)
 		VALUES (#{id}, #{email}, #{pw})
 	</insert>
+	
+	<update id="updateUser" parameterType="com.example.springai.dto.UserDto">
+		UPDATE user
+		SET email = #{email}
+		WHERE id = #{id} and pw = #{pw}
+	</update>
 </mapper>

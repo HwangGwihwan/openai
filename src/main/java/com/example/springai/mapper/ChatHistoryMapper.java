@@ -15,5 +15,8 @@ public interface ChatHistoryMapper {
 	List<ChatHistoryDto> selectChatAll(String id);
 	
 	// 즐겨찾기 추가/해제
-	int updateFavorite(String id, int favorite);
+	int updateFavorite(int no, int favorite);
+	
+	// 선택한 대화내용 삭제
+	int deleteByIds(List<Integer> selectedIds);
 }

@@ -26,4 +26,9 @@ public class LoginService {
 	public int signUp(UserDto userDto) {
 		return loginMapper.signUp(userDto);
 	}
+	
+	// 회원정보 수정
+	public int updateUser(UserDto userDto) {
+		return loginMapper.updateUser(userDto);
+	}
 }

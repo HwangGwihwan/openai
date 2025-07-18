@@ -10,4 +10,5 @@ public class ChatHistoryDto {
 	private String aiChat;
 	private int favorite;
 	private String createAt;
+	private String tags;
 }

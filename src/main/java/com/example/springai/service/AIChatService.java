@@ -123,8 +123,13 @@ public class AIChatService {
 	}
 
 	// 즐겨찾기 추가/해제
-	public int updateFavorite(String id, int favorite) {
-		return chatHistoryMapper.updateFavorite(id, favorite);
+	public int updateFavorite(int no, int favorite) {
+		return chatHistoryMapper.updateFavorite(no, favorite);
+	}
+	
+	// 선택한 대화내용 삭제
+	public int deleteByIds(List<Integer> selectedIds) {
+		return chatHistoryMapper.deleteByIds(selectedIds);
 	}
 
 	

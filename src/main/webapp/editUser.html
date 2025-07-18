@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>회원정보 수정</title>
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+</head>
+<body>
+  <h2>회원정보 수정</h2>
+
+  <form id="edit-user-form">
+  	<label> 아이디:
+      <input type="text" name="name" id="user-id" readonly>
+    </label><br><br>
+
+    <label>이메일:
+      <input type="email" name="email" id="user-email">
+    </label><br><br>
+
+	<label>비밀번호 입력:
+		<input type="password" name="pw" id="user-pw">
+	</label><br><br>
+    <button type="submit">수정하기</button>
+  </form>
+
+  <script>
+    $(function () {
+      // 1. 로그인한 유저 정보 가져오기
+      $.ajax({
+        url: "/loginUser",
+        method: "GET",
+        success: function (user) {
+          // 입력 폼에 값 채우기
+          $("#user-id").val(user.id);
+          $("#user-email").val(user.email);
+        },
+        error: function () {
+          alert("로그인이 필요합니다.");
+          location.href = "/login.html";
+        }
+      });
+
+      // 2. 수정 폼 전송 시 API 호출
+      $("#edit-user-form").on("submit", function (e) {
+        e.preventDefault();
+
+        const userData = {
+          id: $("#user-id").val(),
+          email: $("#user-email").val(),
+          pw: $('#user-pw').val()
+        };
+
+        $.ajax({
+          url: "/updateUser",
+          method: "POST",
+          contentType: "application/json",
+          data: JSON.stringify(userData),
+          success: function () {
+            alert("회원 정보가 수정되었습니다.");
+            location.href = "/main.html";
+          },
+          error: function () {
+            alert("회원 정보 수정에 실패했습니다.");
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

@@ -8,15 +8,28 @@
 	
 	<select id="selectChatAll" parameterType="String"
 			resultType="com.example.springai.dto.ChatHistoryDto">
-		SELECT user_id AS userId, user_chat AS userChat, ai_chat AS aiChat, create_at AS createAt, favorite
-		FROM chat_history
+		SELECT ch.no AS no, user_id AS userId, user_chat AS userChat,
+				 ai_chat AS aiChat, ch.create_at AS createAt, ch.favorite AS favorite,
+				 GROUP_CONCAT(h.tag_text ORDER BY h.tag_text SEPARATOR ',') AS tags
+		FROM chat_history ch LEFT OUTER JOIN hashtag h
+		ON ch.no = h.no
 		WHERE user_id = #{id}
+		GROUP BY ch.no, ch.user_id, ch.user_chat, ch.ai_chat, ch.create_at, ch.favorite
+		ORDER BY ch.create_at DESC
 	</select>
 
 	<update id="updateFavorite" parameterType="map">
 		UPDATE chat_history
 		SET favorite = #{favorite}
-		WHERE no = #{id}
+		WHERE no = #{no}
 	</update>
+	
+	<delete id="deleteByIds" parameterType="list">
+		DELETE FROM chat_history
+		WHERE no IN
+		<foreach item="id" collection="list" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
 	
 </mapper>

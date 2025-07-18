@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -59,13 +60,15 @@ public class AIChatController {
 	}
 	
 	// 즐겨찾기 추가 해제
-	@PostMapping("/chatHistory/favorite/{id}")
-	public ResponseEntity<String> updateFavorite(@PathVariable String id,
+	@PostMapping("/chatHistory/favorite/{no}")
+	public ResponseEntity<String> updateFavorite(@PathVariable int no,
 			@RequestBody Map<String, Integer> body) {
 		// {"userMsg":"hello"} JSON 문자열 -> 자바 DTO 객체(@RequestBody)
+		// System.out.println(no);
+		
 		int favorite = body.get("favorite");
     	
-		int updated = aiChatService.updateFavorite(id, favorite);
+		int updated = aiChatService.updateFavorite(no, favorite);
 
 	    if (updated > 0) {
 	        return ResponseEntity.ok("즐겨찾기 상태가 업데이트되었습니다.");
@@ -74,5 +77,27 @@ public class AIChatController {
 	    }
 		
     }
+	
+	// 선택한 대화내용 삭제
+	@PostMapping("/chatHistory/delete")
+	public ResponseEntity<String> delete(@RequestBody List<Integer> selectedIds) {
+	    if (selectedIds == null || selectedIds.isEmpty()) {
+	        return ResponseEntity.badRequest().body("삭제할 항목이 없습니다.");
+	    }
+
+	    try {
+	        // 서비스 호출하여 삭제 처리 (예시)
+	        int deletedCount = aiChatService.deleteByIds(selectedIds);
+
+	        if (deletedCount == 0) {
+	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("삭제할 데이터가 없습니다.");
+	        }
+
+	        return ResponseEntity.ok("삭제 완료");
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("서버 오류");
+	    }
+	}
 	
 }

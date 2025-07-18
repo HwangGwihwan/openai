@@ -36,42 +36,43 @@
       font-size: 14px;
     }
 
-	/* 각 열 너비 조절 */
-	#chat-table th:nth-child(2),
-	#chat-table td:nth-child(2) {
-	  width: 140px; /* 날짜/시간 */
-	}
+    /* 각 열 너비 조절 */
+    #chat-table th:nth-child(2),
+    #chat-table td:nth-child(2) {
+      width: 140px; /* 날짜/시간 */
+    }
 
-	#chat-table th:nth-child(3),
-	#chat-table td:nth-child(3) {
-	  width: 100px; /* USER ID */
-	  white-space: nowrap;
-	}
-	
-	#chat-table th:nth-child(4),
-	#chat-table td:nth-child(4) {
-	  width: 150px; /* 유저 질문 */
-	  word-break: break-word;
-	}
-	
-	#chat-table th:nth-child(5),
-	#chat-table td:nth-child(5) {
-	  max-width: 400px; /* AI 응답 */
-	  word-break: break-word;
-	  text-align: left;
-	}
-	
-	#chat-table th:nth-child(6),
-	#chat-table td:nth-child(6) {
-	  width: 100px; /* 즐겨찾기 */
-	  white-space: nowrap;
-	}
-	
-	#chat-table th:nth-child(7),
-	#chat-table td:nth-child(7) {
-	  width: 110px; /* 해시태그 버튼 */
-	  white-space: nowrap;
-	}
+    #chat-table th:nth-child(3),
+    #chat-table td:nth-child(3) {
+      width: 100px; /* USER ID */
+      white-space: nowrap;
+    }
+
+    #chat-table th:nth-child(4),
+    #chat-table td:nth-child(4) {
+      width: 150px; /* 유저 질문 */
+      word-break: break-word;
+    }
+
+    #chat-table th:nth-child(5),
+    #chat-table td:nth-child(5) {
+      max-width: 400px; /* AI 응답 */
+      word-break: break-word;
+      text-align: left;
+    }
+
+    #chat-table th:nth-child(6),
+    #chat-table td:nth-child(6) {
+      width: 100px; /* 즐겨찾기 */
+      white-space: nowrap;
+    }
+
+    #chat-table th:nth-child(7),
+    #chat-table td:nth-child(7) {
+      width: 110px; /* 해시태그 버튼 */
+      white-space: nowrap;
+    }
+
     th, td {
       padding: 12px 10px;
       border: 1px solid #ccc;
@@ -152,6 +153,65 @@
     }
 
     /* 페이징은 DataTables 기본 스타일 사용 */
+    
+    /* 해시태그 모달 스타일 */
+	#hashtag-modal {
+	  position: fixed;
+	  top: 0; left: 0;
+	  width: 100%; height: 100%;
+	  z-index: 9999;
+	}
+	
+	.modal-overlay {
+	  position: absolute;
+	  width: 100%; height: 100%;
+	  background: rgba(0, 0, 0, 0.5);
+	}
+	
+	.modal-content {
+	  position: absolute;
+	  top: 50%; left: 50%;
+	  transform: translate(-50%, -50%);
+	  background: #fff;
+	  padding: 20px 30px;
+	  border-radius: 8px;
+	  width: 400px;
+	  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+	}
+	
+	.modal-content h4 {
+	  margin-top: 0;
+	}
+	
+	.modal-content input {
+	  width: 100%;
+	  padding: 8px;
+	  margin-top: 10px;
+	  margin-bottom: 15px;
+	  border: 1px solid #ccc;
+	  border-radius: 4px;
+	}
+	
+	.modal-buttons {
+	  text-align: right;
+	}
+	
+	.modal-buttons button {
+	  margin-left: 10px;
+	  padding: 6px 12px;
+	  border: none;
+	  border-radius: 4px;
+	  cursor: pointer;
+	}
+	
+	#cancel-modal {
+	  background-color: #ccc;
+	}
+	
+	#save-tags {
+	  background-color: #000;
+	  color: #fff;
+	}
   </style>
 </head>
 <body>
@@ -173,7 +233,7 @@
       </tr>
     </thead>
     <tbody>
-      <!-- AJAX로 채워짐 -->
+      <!-- DataTables가 직접 관리 -->
     </tbody>
   </table>
 
@@ -183,18 +243,33 @@
     <label><input type="radio" name="view-filter" value="all" checked> 전체보기</label>
     <label><input type="radio" name="view-filter" value="favorite"> 즐겨찾기</label>
   </div>
-
+  
+  <!-- 해시태그 모달 -->
+  <div id="hashtag-modal" style="display: none;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <h4>해시태그 추가</h4>
+      <p>해시태그 목록: <span id="existing-tags">로딩중...</span></p>
+      <input type="text" id="new-tags" placeholder="해시태그를 입력하세요 (쉼표로 여러 개 구분)" />
+      <div class="modal-buttons">
+        <button id="cancel-modal">취소</button>
+        <button id="save-tags">저장</button>
+      </div>
+    </div>
+  </div>
+  
   <script>
     let dataTable = null;
     let allData = [];
-
+    let currentTagId = null;
+    
     $(function() {
       // 1. 로그인 유저 정보 가져오기
       $.ajax({
         url: "/loginUser",
         method: "GET",
         success: function(user) {
-          $("#user-info").text(`사용자: ${user.id}`);
+          $("#user-info").html(`사용자: <a href="#" id="edit-user" data-user-id="${user.id}">${user.id}</a>`);
 
           // 2. 로그인 유저 ID로 채팅 기록 가져오기
           fetchData(user.id);
@@ -220,80 +295,104 @@
         });
       }
 
-      // 테이블 렌더링 함수 (DataTables 재초기화 포함)
+      // DataTables 초기화 및 렌더링
       function renderTable(data) {
-        const tbody = $("#chat-table tbody");
-        tbody.empty();
-
-        if (!data || data.length === 0) {
-          tbody.append("<tr><td colspan='7'>대화 기록이 없습니다.</td></tr>");
-        } else {
-          data.forEach(item => {
-            const favoriteToggle = `
-              <label class="switch">
-                <input type="checkbox" class="toggle-favorite" data-id="${item.no}" ${item.favorite ? "checked" : ""} />
-                <span class="slider"></span>
-              </label>
-            `;
-
-            const row = `
-              <tr>
-                <td><input type="checkbox" class="select-row" data-id="${item.no}"></td>
-                <td>${item.createAt}</td>
-                <td>${item.userId}</td>
-                <td>${item.userChat}</td>
-                <td>${item.aiChat}</td>
-                <td>${favoriteToggle}</td>
-                <td><button class="tag-btn" data-id="${item.no}"># 해시태그 추가</button></td>
-              </tr>
-            `;
-            tbody.append(row);
+        if (!dataTable) {
+          dataTable = $('#chat-table').DataTable({
+            paging: true,
+            searching: false,
+            ordering: false,
+            lengthChange: false,
+            pageLength: 3,
+            language: {
+              url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/ko.json"
+            },
+            data: data,
+            columns: [
+              {
+                data: null,
+                orderable: false,
+                render: function(data) {
+                  return `<input type="checkbox" class="select-row" data-id="${data.no}">`;
+                }
+              },
+              { data: 'createAt' },
+              { data: 'userId' },
+              { data: 'userChat' },
+              { data: 'aiChat' },
+              {
+                data: 'favorite',
+                orderable: false,
+                render: function(favorite, type, row) {
+                  return `
+                    <label class="switch">
+                      <input type="checkbox" class="toggle-favorite" data-id="${row.no}" ${favorite == 1 ? "checked" : ""} />
+                      <span class="slider"></span>
+                    </label>
+                  `;
+                }
+              },
+              {
+                data: null,
+                orderable: false,
+                render: function(data) {
+                  return `<button class="tag-btn" data-id="${data.no}"># 해시태그 추가</button>`;
+                }
+              }
+            ]
           });
+        } else {
+          dataTable.clear();
+          dataTable.rows.add(data);
+          dataTable.draw();
         }
-
-        // DataTables 재초기화
-        if (dataTable) {
-          dataTable.destroy();
-        }
-        dataTable = $('#chat-table').DataTable({
-          paging: true,
-          searching: false,
-          ordering: true,
-          lengthChange: false,
-          pageLength: 3,
-          language: {
-            url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/ko.json"
-          }
-        });
       }
+
+      // 유저 아이디 클릭 시 정보수정 페이지 이동
+      $(document).on("click", "#edit-user", function(e) {
+        e.preventDefault();
+        window.location.href = "editUser.html";
+      });
 
       // 전체 선택 체크박스 기능 (이벤트 위임)
       $(document).on("change", "#select-all", function() {
-        $(".select-row").prop("checked", this.checked);
+        const checked = $(this).is(":checked");
+        $(".select-row").prop("checked", checked);
       });
 
-      // 즐겨찾기 토글 변경 이벤트 예시 (서버에 변경 사항 전송 가능)
+      // 개별 행 체크박스 변경 시 전체 선택 체크박스 상태 반영
+      $(document).on("change", ".select-row", function() {
+        const total = $(".select-row").length;
+        const checked = $(".select-row:checked").length;
+        $("#select-all").prop("checked", total === checked);
+      });
+
+      // 즐겨찾기 토글 변경 이벤트 (이벤트 위임)
       $(document).on("change", ".toggle-favorite", function() {
-		  const chatId = $(this).data("id");
-		  const isFavorite = $(this).is(":checked");
-		  const favoriteValue = isFavorite ? 1 : 0;  // true -> 1, false -> 0
-		
-		  $.ajax({
-		    url: `/chatHistory/favorite/${chatId}`,
-		    method: "POST",  // 또는 PUT/PATCH (서버 API에 맞게)
-		    contentType: "application/json",
-		    data: JSON.stringify({ favorite: favoriteValue }),
-		    success: function(response) {
-		      console.log(`Chat ID ${chatId} favorite 업데이트 성공`);
-		      // 필요하면 서버에서 최신 데이터 받아 테이블 다시 그리기 등 처리
-		    },
-		    error: function(xhr, status, error) {
-		      alert("즐겨찾기 업데이트에 실패했습니다.");
-		      $(this).prop("checked", !isFavorite);
-		      console.error(error);
-		    }.bind(this)
-		  });
-		});
+        const no = $(this).data("id");
+        const isFavorite = $(this).is(":checked");
+        const favoriteValue = isFavorite ? 1 : 0;
+
+        $.ajax({
+          url: `/chatHistory/favorite/${no}`,
+          method: "POST", // 필요에 따라 PUT/PATCH로 변경
+          contentType: "application/json",
+          data: JSON.stringify({ favorite: favoriteValue }),
+          success: function() {
+            // allData 업데이트
+            const item = allData.find(i => i.no === no);
+            if (item) {
+              item.favorite = favoriteValue;
+            }
+          },
+          error: function(xhr, status, error) {
+            alert("즐겨찾기 업데이트에 실패했습니다.");
+            // 상태 복구
+            $(this).prop("checked", !isFavorite);
+            console.error(error);
+          }.bind(this)
+        });
+      });
 
       // 선택 삭제 버튼 클릭
       $("#delete-selected").click(function() {
@@ -301,50 +400,147 @@
           return $(this).data("id");
         }).get();
 
-        if(selectedIds.length === 0) {
+        if (selectedIds.length === 0) {
           alert("삭제할 항목을 선택해주세요.");
           return;
         }
 
-        if(!confirm(`선택한 ${selectedIds.length}개 항목을 삭제하시겠습니까?`)) {
+        if (!confirm(`선택한 ${selectedIds.length}개 항목을 삭제하시겠습니까?`)) {
           return;
         }
 
-        // 서버에 삭제 요청 보내기 (예시)
-        /*
+        // AJAX로 선택된 ID 배열 전송하여 삭제 요청
         $.ajax({
           url: "/chatHistory/delete",
           method: "POST",
           contentType: "application/json",
           data: JSON.stringify(selectedIds),
           success: function() {
-            alert("삭제 완료");
-            // 삭제 후 다시 데이터 가져오기
-            fetchData($("#user-info").text().split(": ")[1]);
+            alert("선택한 항목이 삭제되었습니다.");
+            // 삭제 후 새로 데이터 다시 불러오기
+            // (페이지 전체 새로고침 대신 fetchData 재호출 권장)
+            const currentUserId = $("#edit-user").data("user-id");
+            if(currentUserId) {
+              fetchData(currentUserId);
+            } else {
+              location.reload();
+            }
           },
-          error: function() {
-            alert("삭제 실패");
+          error: function(xhr, status, error) {
+            alert("삭제에 실패했습니다. 다시 시도해주세요.");
+            console.error(error);
           }
         });
-        */
-
-        // 임시로 로컬 데이터에서 삭제 처리 및 테이블 갱신
-        allData = allData.filter(item => !selectedIds.includes(item.no));
-        renderTable(allData);
       });
 
       // 전체보기 / 즐겨찾기 필터 변경
       $("input[name='view-filter']").change(function() {
         const filter = $(this).val();
 
-        if(filter === "favorite") {
-          const filtered = allData.filter(item => item.favorite);
+        if (filter === "favorite") {
+          const filtered = allData.filter(item => item.favorite == 1);
           renderTable(filtered);
         } else {
           renderTable(allData);
         }
       });
+      
+      
+   // 해시태그 추가 버튼 클릭 시 모달 열기
+   $(document).on("click", ".tag-btn", function () {
+     currentTagId = $(this).data("id");
 
+     // 기존 태그 표시 (배열로 있다고 가정, 없으면 "없음")
+     console.log(allData);
+     const rowData = allData.find(d => d.no === currentTagId);
+     const tagString = rowData && rowData.tags ? rowData.tags.trim() : "";
+
+     const existingTags = tagString
+       ? tagString.split(",").map(tag => tag.trim()).join(", ")
+       : "없음";
+
+     $("#existing-tags").text(existingTags);
+     $("#new-tags").val("");
+     $("#hashtag-modal").fadeIn();
+   });
+
+   // 모달 닫기
+   $("#cancel-modal").click(function () {
+     $("#hashtag-modal").fadeOut();
+   });
+
+   // 저장 버튼 클릭 시
+   $("#save-tags").click(function () {
+     let input = $("#new-tags").val().trim();
+
+     if (!input) {
+       alert("해시태그를 입력해주세요.");
+       return;
+     }
+
+     // 1. #, 공백 제거 → 2. 쉼표로 분리 → 3. 빈 값 제거
+     const tags = input
+       .split(",")
+       .map(tag => tag.replace(/#/g, "").trim())
+       .filter(tag => tag !== "");
+
+     if (tags.length === 0) {
+       alert("유효한 해시태그가 없습니다.");
+       return;
+     }
+
+     // 2. 기존 태그와 중복 제거 (프론트에서 우선 차단)
+     const existing = allData.find(d => d.no === currentTagId)?.tags || [];
+     const newUniqueTags = tags.filter(tag => !existing.includes(tag));
+
+     if (newUniqueTags.length === 0) {
+       alert("이미 등록된 해시태그입니다.");
+       return;
+     }
+
+     // 3. 서버로 저장 요청 (여러 개 insert를 처리하는 API)
+     $.ajax({
+	       url: `/insertHashTag/${currentTagId}`,
+	       method: "POST",
+	       contentType: "application/json",
+	       data: JSON.stringify(newUniqueTags),
+	       success: function () {
+	         alert("해시태그가 저장되었습니다.");
+	         
+	      // 🔁 해당 no의 최신 태그만 새로 가져오기
+	         $.ajax({
+	           url: `/selectTag/${currentTagId}`, // GET 요청으로 태그 문자열 받아옴 (ex: "날씨,비")
+	           method: "GET",
+	           success: function (updatedTagString) {
+	             // 1. allData 갱신
+	             const row = allData.find(d => d.no === currentTagId);
+	             if (row) {
+	               row.tags = updatedTagString;
+	             }
+
+	             // 2. 모달 상단에도 업데이트된 태그 표시
+	             const displayTags = updatedTagString
+	               ? updatedTagString.split(",").map(tag => tag.trim()).join(", ")
+	               : "없음";
+
+	             $("#existing-tags").text(displayTags);
+	           },
+	           error: function () {
+	             alert("해시태그 갱신에 실패했습니다.");
+	           },
+	           complete: function () {
+	             // regardless of success or fail, 닫기
+	             $("#hashtag-modal").fadeOut();
+	           }
+	         });
+	      
+	       },
+	       error: function () {
+	         alert("해시태그 저장에 실패했습니다.");
+	       }
+	     });
+	   });
+ 
     });
   </script>
 

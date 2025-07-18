@@ -14,4 +14,7 @@ public interface LoginMapper {
 	
 	// 회원가입
 	public int signUp(UserDto userDto);
+	
+	// 회원정보 수정
+	public int updateUser(UserDto userDto);
 }
